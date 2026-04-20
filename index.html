@@ -1,1 +1,625 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Award, Star, CheckCircle, XCircle, ArrowRight, BookOpen, Brain, Target, Trophy, Play, User, RefreshCw, FileText, Database, Image as ImageIcon, Video, FileSpreadsheet, Download, Volume2, VolumeX } from 'lucide-react';
 
+// --- DATA ---
+const LEVEL_1_ITEMS = [
+  { id: 1, text: "Tabel Nilai Siswa", type: "terstruktur", icon: <FileSpreadsheet className="w-5 h-5" /> },
+  { id: 2, text: "Foto Pemandangan", type: "tidak_terstruktur", icon: <ImageIcon className="w-5 h-5" /> },
+  { id: 3, text: "Database Sekolah", type: "terstruktur", icon: <Database className="w-5 h-5" /> },
+  { id: 4, text: "Video TikTok", type: "tidak_terstruktur", icon: <Video className="w-5 h-5" /> },
+  { id: 5, text: "File Excel Harga", type: "terstruktur", icon: <FileSpreadsheet className="w-5 h-5" /> },
+  { id: 6, text: "Rekaman Suara", type: "tidak_terstruktur", icon: <FileText className="w-5 h-5" /> },
+];
+
+const LEVEL_2_PAIRS = [
+  { id: 1, term: "Dataset", def: "Kumpulan data mentah yang siap untuk diolah dan dianalisis." },
+  { id: 2, term: "Data Cleansing", def: "Proses membersihkan data dari nilai kosong (null), duplikat, atau error." },
+  { id: 3, term: "Visualisasi Data", def: "Menyajikan data dalam bentuk grafik atau diagram agar mudah dipahami." },
+  { id: 4, term: "Algoritma", def: "Urutan langkah-langkah logis untuk menyelesaikan sebuah masalah." }
+];
+
+const LEVEL_3_QUESTIONS = [
+  {
+    question: "Apa tujuan utama dari Data Science?",
+    options: [
+      "Membuat desain website yang menarik",
+      "Mengekstrak informasi dan pengetahuan yang berguna dari data",
+      "Memperbaiki komputer yang rusak",
+      "Menulis artikel untuk koran"
+    ],
+    answer: 1
+  },
+  {
+    question: "Langkah pertama yang harus dilakukan dalam tahapan Data Science adalah...",
+    options: [
+      "Visualisasi Data",
+      "Pemodelan (Machine Learning)",
+      "Pengumpulan Data (Data Collection)",
+      "Pembersihan Data (Data Cleansing)"
+    ],
+    answer: 2
+  },
+  {
+    question: "Seseorang yang memiliki keahlian dalam mengumpulkan, mengolah, dan menganalisis data untuk pengambilan keputusan disebut...",
+    options: [
+      "Web Developer",
+      "Data Scientist",
+      "UI/UX Designer",
+      "System Analyst"
+    ],
+    answer: 1
+  }
+];
+
+// --- MAIN APP COMPONENT ---
+export default function App() {
+  const [gameState, setGameState] = useState('intro'); // intro, level1, level2, level3, certificate
+  const [score, setScore] = useState(0);
+  const [playerName, setPlayerName] = useState('');
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const audioRef = useRef(null);
+
+  const toggleAudio = () => {
+    if (audioRef.current) {
+      if (isPlayingAudio) {
+        audioRef.current.pause();
+        setIsPlayingAudio(false);
+      } else {
+        audioRef.current.play().then(() => {
+          setIsPlayingAudio(true);
+        }).catch(e => {
+          console.warn("Gagal memutar audio:", e);
+          setIsPlayingAudio(false);
+        });
+      }
+    }
+  };
+
+  const startGame = (name) => {
+    setPlayerName(name);
+    setScore(0);
+    setGameState('level1');
+    
+    // Mulai putar musik saat game dimulai
+    if (audioRef.current) {
+      audioRef.current.play().then(() => {
+        setIsPlayingAudio(true);
+      }).catch(err => {
+        console.warn("Autoplay diblokir oleh browser atau sumber tidak didukung:", err);
+        setIsPlayingAudio(false);
+      });
+    }
+  };
+
+  const advanceLevel = (points, nextState) => {
+    setScore(prev => prev + points);
+    setGameState(nextState);
+  };
+
+  const restartGame = () => {
+    setGameState('intro');
+    setScore(0);
+    setPlayerName('');
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setIsPlayingAudio(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-blue-200">
+      <header className="bg-indigo-600 text-white p-4 shadow-md">
+        <div className="max-w-4xl mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-2 font-bold text-xl">
+            <Brain className="w-8 h-8 text-yellow-300" />
+            <span>DataScience<span className="text-yellow-300">Quest</span></span>
+          </div>
+          {gameState !== 'intro' && (
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={toggleAudio} 
+                className="p-2 bg-indigo-500/50 rounded-full hover:bg-indigo-500 transition-colors"
+                title={isPlayingAudio ? "Matikan Musik" : "Nyalakan Musik"}
+              >
+                {isPlayingAudio ? <Volume2 className="w-5 h-5 text-white" /> : <VolumeX className="w-5 h-5 text-white" />}
+              </button>
+              <div className="hidden sm:block font-medium">Siswa: {playerName}</div>
+              <div className="bg-indigo-800 px-4 py-1.5 rounded-full flex items-center gap-2 font-bold border border-indigo-400">
+                <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                <span>{score} Poin</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </header>
+
+      <main className="max-w-4xl mx-auto p-4 py-8">
+        {gameState === 'intro' && <IntroScreen onStart={startGame} />}
+        {gameState === 'level1' && <Level1 onComplete={(pts) => advanceLevel(pts, 'level2')} />}
+        {gameState === 'level2' && <Level2 onComplete={(pts) => advanceLevel(pts, 'level3')} />}
+        {gameState === 'level3' && <Level3 onComplete={(pts) => advanceLevel(pts, 'certificate')} />}
+        {gameState === 'certificate' && <Certificate name={playerName} score={score} onRestart={restartGame} />}
+      </main>
+
+      {/* Elemen Audio Tersembunyi */}
+      {/* Audio default sementara agar tidak terjadi error (menggunakan musik tes). */}
+      {/* Jika Anda sudah mengetahui nama file audio Anda di GitHub, ganti link di bawah ini menjadi, contoh: "https://mrslamcode.github.io/musikbacksound/lagu.mp3" */}
+      <audio 
+        ref={audioRef}
+        loop
+        src="https://mrslamcode.github.io/musikbacksound/Proof_In_The_Pattern.mp3" 
+        onError={(e) => {
+          console.warn("Audio latar tidak dapat dimuat, namun game tetap bisa dimainkan.");
+          setIsPlayingAudio(false);
+        }}
+      />
+    </div>
+  );
+}
+
+// --- INTRO SCREEN ---
+function IntroScreen({ onStart }) {
+  const [name, setName] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (name.trim()) onStart(name.trim());
+  };
+
+  return (
+    <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md mx-auto mt-10 text-center border-t-4 border-indigo-600">
+      <div className="flex justify-center mb-6">
+        <div className="bg-indigo-100 p-4 rounded-full">
+          <BookOpen className="w-16 h-16 text-indigo-600" />
+        </div>
+      </div>
+      <h1 className="text-2xl font-extrabold text-slate-800 mb-2">Selamat Datang di DataScience Quest!</h1>
+      <p className="text-slate-600 mb-8 text-sm">
+        Pelajari dasar-dasar ilmu data kelas 10 lewat 3 misi seru. Kumpulkan poin tertinggi dan dapatkan sertifikatmu!
+      </p>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-left text-sm font-semibold text-slate-700 mb-1">Nama Siswa</label>
+          <div className="relative">
+            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+            <input 
+              type="text" 
+              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+              placeholder="Masukkan namamu..."
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+        </div>
+        <button 
+          type="submit"
+          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors"
+        >
+          <Play className="w-5 h-5" /> Mulai Petualangan
+        </button>
+      </form>
+    </div>
+  );
+}
+
+// --- LEVEL 1: DRAG AND DROP ---
+function Level1({ onComplete }) {
+  const [items, setItems] = useState(LEVEL_1_ITEMS);
+  const [terstruktur, setTerstruktur] = useState([]);
+  const [tidakTerstruktur, setTidakTerstruktur] = useState([]);
+  const [selectedItem, setSelectedItem] = useState(null); // For tap/click support
+  const [pointsEarned, setPointsEarned] = useState(0);
+
+  const isComplete = items.length === 0;
+
+  // Drag and drop handlers
+  const handleDragStart = (e, item) => {
+    e.dataTransfer.setData('itemId', item.id);
+  };
+
+  const handleDrop = (e, zoneType) => {
+    e.preventDefault();
+    const itemId = parseInt(e.dataTransfer.getData('itemId'));
+    const item = items.find(i => i.id === itemId);
+    if (item) processMove(item, zoneType);
+  };
+
+  const handleDragOver = (e) => e.preventDefault();
+
+  // Tap/Click handlers (for mobile support)
+  const handleItemClick = (item) => {
+    setSelectedItem(selectedItem?.id === item.id ? null : item);
+  };
+
+  const handleZoneClick = (zoneType) => {
+    if (selectedItem) {
+      processMove(selectedItem, zoneType);
+      setSelectedItem(null);
+    }
+  };
+
+  const processMove = (item, zoneType) => {
+    if (item.type === zoneType) {
+      // Correct Match
+      setItems(prev => prev.filter(i => i.id !== item.id));
+      if (zoneType === 'terstruktur') setTerstruktur(prev => [...prev, item]);
+      else setTidakTerstruktur(prev => [...prev, item]);
+      setPointsEarned(prev => prev + 5); // 5 points per correct item
+    } else {
+      // Incorrect Match - optional penalty or just visual feedback
+      alert(`Oops! "${item.text}" bukan merupakan tipe data ${zoneType === 'terstruktur' ? 'Terstruktur' : 'Tidak Terstruktur'}. Coba lagi!`);
+    }
+  };
+
+  return (
+    <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-slate-100">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="bg-blue-100 p-2 rounded-lg"><Target className="w-6 h-6 text-blue-600" /></div>
+        <div>
+          <h2 className="text-xl font-bold text-slate-800">Level 1: Kelompokkan Data</h2>
+          <p className="text-sm text-slate-500">Tarik (Drag) atau Klik item di bawah ke dalam kotak kategori yang tepat.</p>
+        </div>
+      </div>
+
+      <div className="mb-8">
+        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Item Data:</h3>
+        <div className="flex flex-wrap gap-3">
+          {items.map(item => (
+            <div 
+              key={item.id}
+              draggable
+              onDragStart={(e) => handleDragStart(e, item)}
+              onClick={() => handleItemClick(item)}
+              className={`flex items-center gap-2 px-4 py-2 bg-white border-2 rounded-xl shadow-sm cursor-pointer transition-all hover:shadow-md
+                ${selectedItem?.id === item.id ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200' : 'border-slate-200 hover:border-indigo-300'}
+              `}
+            >
+              {item.icon}
+              <span className="font-medium text-sm text-slate-700">{item.text}</span>
+            </div>
+          ))}
+          {items.length === 0 && (
+            <div className="text-green-600 font-bold flex items-center gap-2">
+              <CheckCircle className="w-5 h-5" /> Semua item berhasil dikelompokkan!
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Zone Terstruktur */}
+        <div 
+          onDrop={(e) => handleDrop(e, 'terstruktur')}
+          onDragOver={handleDragOver}
+          onClick={() => handleZoneClick('terstruktur')}
+          className={`border-2 border-dashed rounded-xl p-4 min-h-[200px] transition-colors
+            ${selectedItem ? 'border-blue-400 bg-blue-50 cursor-pointer' : 'border-slate-300 bg-slate-50'}`}
+        >
+          <div className="font-bold text-blue-800 mb-4 border-b-2 border-blue-200 pb-2 text-center">
+            Data Terstruktur (Tabel/Format Jelas)
+          </div>
+          <div className="space-y-2">
+            {terstruktur.map(item => (
+              <div key={item.id} className="bg-white border border-blue-100 p-2 rounded-lg flex items-center gap-2 text-sm shadow-sm text-blue-900">
+                 <CheckCircle className="w-4 h-4 text-green-500" /> {item.text}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Zone Tidak Terstruktur */}
+        <div 
+          onDrop={(e) => handleDrop(e, 'tidak_terstruktur')}
+          onDragOver={handleDragOver}
+          onClick={() => handleZoneClick('tidak_terstruktur')}
+          className={`border-2 border-dashed rounded-xl p-4 min-h-[200px] transition-colors
+            ${selectedItem ? 'border-purple-400 bg-purple-50 cursor-pointer' : 'border-slate-300 bg-slate-50'}`}
+        >
+          <div className="font-bold text-purple-800 mb-4 border-b-2 border-purple-200 pb-2 text-center">
+            Data Tidak Terstruktur (Media/Teks Bebas)
+          </div>
+          <div className="space-y-2">
+            {tidakTerstruktur.map(item => (
+              <div key={item.id} className="bg-white border border-purple-100 p-2 rounded-lg flex items-center gap-2 text-sm shadow-sm text-purple-900">
+                 <CheckCircle className="w-4 h-4 text-green-500" /> {item.text}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {isComplete && (
+        <div className="mt-8 flex justify-end animate-bounce">
+          <button 
+            onClick={() => onComplete(pointsEarned)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2"
+          >
+            Lanjut ke Level 2 <ArrowRight className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// --- LEVEL 2: MATCHING WORD ---
+function Level2({ onComplete }) {
+  // Shuffle logic for left and right columns
+  const [terms, setTerms] = useState([]);
+  const [defs, setDefs] = useState([]);
+  const [selectedTerm, setSelectedTerm] = useState(null);
+  const [selectedDef, setSelectedDef] = useState(null);
+  const [matchedIds, setMatchedIds] = useState([]);
+  const [pointsEarned, setPointsEarned] = useState(0);
+
+  useEffect(() => {
+    // Shuffle arrays independently on mount
+    const shuffledTerms = [...LEVEL_2_PAIRS].sort(() => Math.random() - 0.5);
+    const shuffledDefs = [...LEVEL_2_PAIRS].sort(() => Math.random() - 0.5);
+    setTerms(shuffledTerms);
+    setDefs(shuffledDefs);
+  }, []);
+
+  useEffect(() => {
+    if (selectedTerm && selectedDef) {
+      if (selectedTerm === selectedDef) {
+        // Match!
+        setMatchedIds(prev => [...prev, selectedTerm]);
+        setPointsEarned(prev => prev + 10); // 10 points per match
+        setSelectedTerm(null);
+        setSelectedDef(null);
+      } else {
+        // No match, clear after slight delay
+        setTimeout(() => {
+          setSelectedTerm(null);
+          setSelectedDef(null);
+        }, 600);
+      }
+    }
+  }, [selectedTerm, selectedDef]);
+
+  const isComplete = matchedIds.length === LEVEL_2_PAIRS.length;
+
+  return (
+    <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-slate-100">
+       <div className="flex items-center gap-3 mb-8">
+        <div className="bg-green-100 p-2 rounded-lg"><target className="w-6 h-6 text-green-600" /></div>
+        <div>
+          <h2 className="text-xl font-bold text-slate-800">Level 2: Jodohkan Istilah</h2>
+          <p className="text-sm text-slate-500">Pilih istilah di kiri lalu pilih arti yang sesuai di kanan.</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 md:gap-8 relative">
+        {/* Left Column: Terms */}
+        <div className="space-y-4">
+          <h3 className="text-center font-bold text-slate-600 mb-4">Istilah</h3>
+          {terms.map(item => {
+            const isMatched = matchedIds.includes(item.id);
+            const isSelected = selectedTerm === item.id;
+            let btnClass = "border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50 text-slate-700";
+            if (isSelected) btnClass = "border-indigo-500 bg-indigo-100 text-indigo-800 ring-2 ring-indigo-200";
+            if (isMatched) btnClass = "border-green-500 bg-green-50 text-green-700 opacity-60 cursor-not-allowed";
+
+            return (
+              <button
+                key={`term-${item.id}`}
+                disabled={isMatched}
+                onClick={() => setSelectedTerm(item.id)}
+                className={`w-full p-4 rounded-xl border-2 font-bold text-sm md:text-base text-left transition-all ${btnClass}`}
+              >
+                {item.term}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Right Column: Definitions */}
+        <div className="space-y-4">
+          <h3 className="text-center font-bold text-slate-600 mb-4">Pengertian</h3>
+          {defs.map(item => {
+            const isMatched = matchedIds.includes(item.id);
+            const isSelected = selectedDef === item.id;
+            let btnClass = "border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50 text-slate-600";
+            if (isSelected) btnClass = "border-indigo-500 bg-indigo-100 text-indigo-800 ring-2 ring-indigo-200";
+            if (isMatched) btnClass = "border-green-500 bg-green-50 text-green-700 opacity-60 cursor-not-allowed";
+            if (selectedTerm && selectedDef === item.id && selectedTerm !== item.id) {
+               btnClass = "border-red-500 bg-red-50 text-red-700 ring-2 ring-red-200"; // Error state momentarily
+            }
+
+            return (
+              <button
+                key={`def-${item.id}`}
+                disabled={isMatched}
+                onClick={() => setSelectedDef(item.id)}
+                className={`w-full p-4 rounded-xl border-2 text-sm leading-snug text-left transition-all ${btnClass}`}
+              >
+                {item.def}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {isComplete && (
+        <div className="mt-10 flex justify-end animate-bounce">
+          <button 
+            onClick={() => onComplete(pointsEarned)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2"
+          >
+            Lanjut ke Level Terakhir <ArrowRight className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// --- LEVEL 3: MULTIPLE CHOICE ---
+function Level3({ onComplete }) {
+  const [currentQ, setCurrentQ] = useState(0);
+  const [pointsEarned, setPointsEarned] = useState(0);
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [isAnswered, setIsAnswered] = useState(false);
+
+  const question = LEVEL_3_QUESTIONS[currentQ];
+
+  const handleAnswer = (index) => {
+    if (isAnswered) return;
+    setSelectedOption(index);
+    setIsAnswered(true);
+    
+    if (index === question.answer) {
+      setPointsEarned(prev => prev + 10); // 10 points per correct answer
+    }
+  };
+
+  const nextQuestion = () => {
+    if (currentQ < LEVEL_3_QUESTIONS.length - 1) {
+      setCurrentQ(prev => prev + 1);
+      setSelectedOption(null);
+      setIsAnswered(false);
+    } else {
+      onComplete(pointsEarned);
+    }
+  };
+
+  return (
+    <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-slate-100 max-w-2xl mx-auto">
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center gap-3">
+          <div className="bg-purple-100 p-2 rounded-lg"><BookOpen className="w-6 h-6 text-purple-600" /></div>
+          <h2 className="text-xl font-bold text-slate-800">Level 3: Kuis Akhir</h2>
+        </div>
+        <div className="text-sm font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+          Pertanyaan {currentQ + 1} dari {LEVEL_3_QUESTIONS.length}
+        </div>
+      </div>
+
+      <div className="mb-8">
+        <h3 className="text-lg md:text-xl font-semibold text-slate-800 leading-relaxed">
+          {question.question}
+        </h3>
+      </div>
+
+      <div className="space-y-3 mb-8">
+        {question.options.map((opt, idx) => {
+          const isCorrect = idx === question.answer;
+          const isSelected = selectedOption === idx;
+          
+          let btnClass = "border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-slate-700";
+          
+          if (isAnswered) {
+            if (isCorrect) btnClass = "border-green-500 bg-green-100 text-green-800 font-bold";
+            else if (isSelected && !isCorrect) btnClass = "border-red-500 bg-red-100 text-red-800";
+            else btnClass = "border-slate-200 opacity-50";
+          }
+
+          return (
+            <button
+              key={idx}
+              disabled={isAnswered}
+              onClick={() => handleAnswer(idx)}
+              className={`w-full p-4 text-left border-2 rounded-xl transition-all flex justify-between items-center ${btnClass}`}
+            >
+              <span>{String.fromCharCode(65 + idx)}. {opt}</span>
+              {isAnswered && isCorrect && <CheckCircle className="w-5 h-5 text-green-600" />}
+              {isAnswered && isSelected && !isCorrect && <XCircle className="w-5 h-5 text-red-600" />}
+            </button>
+          )
+        })}
+      </div>
+
+      {isAnswered && (
+        <div className="flex justify-end">
+          <button 
+            onClick={nextQuestion}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2"
+          >
+            {currentQ < LEVEL_3_QUESTIONS.length - 1 ? 'Pertanyaan Selanjutnya' : 'Selesaikan Misi!'} <ArrowRight className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// --- CERTIFICATE COMPONENT ---
+function Certificate({ name, score, onRestart }) {
+  const date = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+  const isPerfect = score === 100;
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-8">
+      {/* Certificate Box */}
+      <div id="certificate" className="relative p-10 md:p-16 bg-white border-[12px] border-double border-indigo-200 rounded-lg shadow-2xl overflow-hidden">
+        {/* Background Decorations */}
+        <div className="absolute top-0 left-0 w-32 h-32 bg-indigo-100 rounded-br-full opacity-50"></div>
+        <div className="absolute bottom-0 right-0 w-48 h-48 bg-yellow-100 rounded-tl-full opacity-50"></div>
+        
+        <div className="relative z-10 text-center">
+          <div className="flex justify-center mb-6">
+            <Trophy className={`w-20 h-20 ${isPerfect ? 'text-yellow-400' : 'text-slate-400'}`} />
+          </div>
+          
+          <h1 className="text-4xl md:text-5xl font-extrabold text-indigo-900 mb-2 uppercase tracking-wider">
+            Sertifikat Kelulusan
+          </h1>
+          <p className="text-indigo-600 font-semibold tracking-widest uppercase text-sm mb-10">
+            Data Science Quest - Level Pemula
+          </p>
+
+          <p className="text-slate-600 italic mb-4">Diberikan dengan bangga kepada:</p>
+          <h2 className="text-4xl font-bold text-slate-800 border-b-2 border-slate-300 inline-block px-8 pb-2 mb-8">
+            {name}
+          </h2>
+
+          <p className="text-slate-600 max-w-lg mx-auto mb-10">
+            Telah berhasil menyelesaikan misi edukasi dasar-dasar Data Science (Kelas 10) dengan pencapaian yang sangat baik dan meraih skor:
+          </p>
+
+          <div className="flex justify-center items-center gap-4 mb-12">
+            <div className="bg-indigo-600 text-white px-8 py-3 rounded-full text-3xl font-black shadow-lg">
+              {score} / 100
+            </div>
+            {isPerfect && (
+              <div className="bg-yellow-400 text-yellow-900 px-4 py-3 rounded-full text-sm font-bold flex items-center gap-1 shadow-lg animate-pulse">
+                <Star className="w-5 h-5 fill-yellow-900" /> Nilai Sempurna!
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-between items-end border-t border-slate-200 pt-8 mt-8">
+            <div className="text-left">
+              <p className="text-sm text-slate-500 mb-1">Tanggal Penyelesaian:</p>
+              <p className="font-bold text-slate-700">{date}</p>
+            </div>
+            <div className="text-right flex flex-col items-center">
+              <Brain className="w-10 h-10 text-indigo-300 mb-2" />
+              <p className="font-bold text-slate-700">Instruktur AI</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row justify-center gap-4">
+        <button 
+          onClick={() => window.print()}
+          className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-md"
+        >
+          <Download className="w-5 h-5" /> Simpan / Cetak Sertifikat
+        </button>
+        <button 
+          onClick={onRestart}
+          className="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-md"
+        >
+          <RefreshCw className="w-5 h-5" /> Main Ulang
+        </button>
+      </div>
+    </div>
+  );
+}
