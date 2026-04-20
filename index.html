@@ -1,625 +1,779 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Award, Star, CheckCircle, XCircle, ArrowRight, BookOpen, Brain, Target, Trophy, Play, User, RefreshCw, FileText, Database, Image as ImageIcon, Video, FileSpreadsheet, Download, Volume2, VolumeX } from 'lucide-react';
-
-// --- DATA ---
-const LEVEL_1_ITEMS = [
-  { id: 1, text: "Tabel Nilai Siswa", type: "terstruktur", icon: <FileSpreadsheet className="w-5 h-5" /> },
-  { id: 2, text: "Foto Pemandangan", type: "tidak_terstruktur", icon: <ImageIcon className="w-5 h-5" /> },
-  { id: 3, text: "Database Sekolah", type: "terstruktur", icon: <Database className="w-5 h-5" /> },
-  { id: 4, text: "Video TikTok", type: "tidak_terstruktur", icon: <Video className="w-5 h-5" /> },
-  { id: 5, text: "File Excel Harga", type: "terstruktur", icon: <FileSpreadsheet className="w-5 h-5" /> },
-  { id: 6, text: "Rekaman Suara", type: "tidak_terstruktur", icon: <FileText className="w-5 h-5" /> },
-];
-
-const LEVEL_2_PAIRS = [
-  { id: 1, term: "Dataset", def: "Kumpulan data mentah yang siap untuk diolah dan dianalisis." },
-  { id: 2, term: "Data Cleansing", def: "Proses membersihkan data dari nilai kosong (null), duplikat, atau error." },
-  { id: 3, term: "Visualisasi Data", def: "Menyajikan data dalam bentuk grafik atau diagram agar mudah dipahami." },
-  { id: 4, term: "Algoritma", def: "Urutan langkah-langkah logis untuk menyelesaikan sebuah masalah." }
-];
-
-const LEVEL_3_QUESTIONS = [
-  {
-    question: "Apa tujuan utama dari Data Science?",
-    options: [
-      "Membuat desain website yang menarik",
-      "Mengekstrak informasi dan pengetahuan yang berguna dari data",
-      "Memperbaiki komputer yang rusak",
-      "Menulis artikel untuk koran"
-    ],
-    answer: 1
-  },
-  {
-    question: "Langkah pertama yang harus dilakukan dalam tahapan Data Science adalah...",
-    options: [
-      "Visualisasi Data",
-      "Pemodelan (Machine Learning)",
-      "Pengumpulan Data (Data Collection)",
-      "Pembersihan Data (Data Cleansing)"
-    ],
-    answer: 2
-  },
-  {
-    question: "Seseorang yang memiliki keahlian dalam mengumpulkan, mengolah, dan menganalisis data untuk pengambilan keputusan disebut...",
-    options: [
-      "Web Developer",
-      "Data Scientist",
-      "UI/UX Designer",
-      "System Analyst"
-    ],
-    answer: 1
-  }
-];
-
-// --- MAIN APP COMPONENT ---
-export default function App() {
-  const [gameState, setGameState] = useState('intro'); // intro, level1, level2, level3, certificate
-  const [score, setScore] = useState(0);
-  const [playerName, setPlayerName] = useState('');
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const audioRef = useRef(null);
-
-  const toggleAudio = () => {
-    if (audioRef.current) {
-      if (isPlayingAudio) {
-        audioRef.current.pause();
-        setIsPlayingAudio(false);
-      } else {
-        audioRef.current.play().then(() => {
-          setIsPlayingAudio(true);
-        }).catch(e => {
-          console.warn("Gagal memutar audio:", e);
-          setIsPlayingAudio(false);
-        });
-      }
-    }
-  };
-
-  const startGame = (name) => {
-    setPlayerName(name);
-    setScore(0);
-    setGameState('level1');
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataScience Quest - Game Edukasi</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    // Mulai putar musik saat game dimulai
-    if (audioRef.current) {
-      audioRef.current.play().then(() => {
-        setIsPlayingAudio(true);
-      }).catch(err => {
-        console.warn("Autoplay diblokir oleh browser atau sumber tidak didukung:", err);
-        setIsPlayingAudio(false);
-      });
-    }
-  };
+    <style>
+        /* Custom Styles & Print Styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
 
-  const advanceLevel = (points, nextState) => {
-    setScore(prev => prev + points);
-    setGameState(nextState);
-  };
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-  const restartGame = () => {
-    setGameState('intro');
-    setScore(0);
-    setPlayerName('');
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-      setIsPlayingAudio(false);
-    }
-  };
+        .bounce-in {
+            animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
 
-  return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-blue-200">
-      <header className="bg-indigo-600 text-white p-4 shadow-md">
-        <div className="max-w-4xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-2 font-bold text-xl">
-            <Brain className="w-8 h-8 text-yellow-300" />
-            <span>DataScience<span className="text-yellow-300">Quest</span></span>
-          </div>
-          {gameState !== 'intro' && (
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={toggleAudio} 
-                className="p-2 bg-indigo-500/50 rounded-full hover:bg-indigo-500 transition-colors"
-                title={isPlayingAudio ? "Matikan Musik" : "Nyalakan Musik"}
-              >
-                {isPlayingAudio ? <Volume2 className="w-5 h-5 text-white" /> : <VolumeX className="w-5 h-5 text-white" />}
-              </button>
-              <div className="hidden sm:block font-medium">Siswa: {playerName}</div>
-              <div className="bg-indigo-800 px-4 py-1.5 rounded-full flex items-center gap-2 font-bold border border-indigo-400">
-                <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                <span>{score} Poin</span>
-              </div>
+        @keyframes bounceIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Khusus untuk cetak Sertifikat */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #certificate-content, #certificate-content * {
+                visibility: visible;
+            }
+            #certificate-content {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+            }
+            header, .print-hide {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800 selection:bg-blue-200">
+
+    <!-- HEADER -->
+    <header class="bg-indigo-600 text-white p-4 shadow-md">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2 font-bold text-xl">
+                <i class="fa-solid fa-brain text-yellow-300 text-2xl"></i>
+                <span>DataScience<span class="text-yellow-300">Quest</span></span>
             </div>
-          )}
-        </div>
-      </header>
-
-      <main className="max-w-4xl mx-auto p-4 py-8">
-        {gameState === 'intro' && <IntroScreen onStart={startGame} />}
-        {gameState === 'level1' && <Level1 onComplete={(pts) => advanceLevel(pts, 'level2')} />}
-        {gameState === 'level2' && <Level2 onComplete={(pts) => advanceLevel(pts, 'level3')} />}
-        {gameState === 'level3' && <Level3 onComplete={(pts) => advanceLevel(pts, 'certificate')} />}
-        {gameState === 'certificate' && <Certificate name={playerName} score={score} onRestart={restartGame} />}
-      </main>
-
-      {/* Elemen Audio Tersembunyi */}
-      {/* Audio default sementara agar tidak terjadi error (menggunakan musik tes). */}
-      {/* Jika Anda sudah mengetahui nama file audio Anda di GitHub, ganti link di bawah ini menjadi, contoh: "https://mrslamcode.github.io/musikbacksound/lagu.mp3" */}
-      <audio 
-        ref={audioRef}
-        loop
-        src="https://mrslamcode.github.io/musikbacksound/Proof_In_The_Pattern.mp3" 
-        onError={(e) => {
-          console.warn("Audio latar tidak dapat dimuat, namun game tetap bisa dimainkan.");
-          setIsPlayingAudio(false);
-        }}
-      />
-    </div>
-  );
-}
-
-// --- INTRO SCREEN ---
-function IntroScreen({ onStart }) {
-  const [name, setName] = useState('');
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (name.trim()) onStart(name.trim());
-  };
-
-  return (
-    <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md mx-auto mt-10 text-center border-t-4 border-indigo-600">
-      <div className="flex justify-center mb-6">
-        <div className="bg-indigo-100 p-4 rounded-full">
-          <BookOpen className="w-16 h-16 text-indigo-600" />
-        </div>
-      </div>
-      <h1 className="text-2xl font-extrabold text-slate-800 mb-2">Selamat Datang di DataScience Quest!</h1>
-      <p className="text-slate-600 mb-8 text-sm">
-        Pelajari dasar-dasar ilmu data kelas 10 lewat 3 misi seru. Kumpulkan poin tertinggi dan dapatkan sertifikatmu!
-      </p>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-left text-sm font-semibold text-slate-700 mb-1">Nama Siswa</label>
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-            <input 
-              type="text" 
-              className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-              placeholder="Masukkan namamu..."
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-          </div>
-        </div>
-        <button 
-          type="submit"
-          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors"
-        >
-          <Play className="w-5 h-5" /> Mulai Petualangan
-        </button>
-      </form>
-    </div>
-  );
-}
-
-// --- LEVEL 1: DRAG AND DROP ---
-function Level1({ onComplete }) {
-  const [items, setItems] = useState(LEVEL_1_ITEMS);
-  const [terstruktur, setTerstruktur] = useState([]);
-  const [tidakTerstruktur, setTidakTerstruktur] = useState([]);
-  const [selectedItem, setSelectedItem] = useState(null); // For tap/click support
-  const [pointsEarned, setPointsEarned] = useState(0);
-
-  const isComplete = items.length === 0;
-
-  // Drag and drop handlers
-  const handleDragStart = (e, item) => {
-    e.dataTransfer.setData('itemId', item.id);
-  };
-
-  const handleDrop = (e, zoneType) => {
-    e.preventDefault();
-    const itemId = parseInt(e.dataTransfer.getData('itemId'));
-    const item = items.find(i => i.id === itemId);
-    if (item) processMove(item, zoneType);
-  };
-
-  const handleDragOver = (e) => e.preventDefault();
-
-  // Tap/Click handlers (for mobile support)
-  const handleItemClick = (item) => {
-    setSelectedItem(selectedItem?.id === item.id ? null : item);
-  };
-
-  const handleZoneClick = (zoneType) => {
-    if (selectedItem) {
-      processMove(selectedItem, zoneType);
-      setSelectedItem(null);
-    }
-  };
-
-  const processMove = (item, zoneType) => {
-    if (item.type === zoneType) {
-      // Correct Match
-      setItems(prev => prev.filter(i => i.id !== item.id));
-      if (zoneType === 'terstruktur') setTerstruktur(prev => [...prev, item]);
-      else setTidakTerstruktur(prev => [...prev, item]);
-      setPointsEarned(prev => prev + 5); // 5 points per correct item
-    } else {
-      // Incorrect Match - optional penalty or just visual feedback
-      alert(`Oops! "${item.text}" bukan merupakan tipe data ${zoneType === 'terstruktur' ? 'Terstruktur' : 'Tidak Terstruktur'}. Coba lagi!`);
-    }
-  };
-
-  return (
-    <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-slate-100">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="bg-blue-100 p-2 rounded-lg"><Target className="w-6 h-6 text-blue-600" /></div>
-        <div>
-          <h2 className="text-xl font-bold text-slate-800">Level 1: Kelompokkan Data</h2>
-          <p className="text-sm text-slate-500">Tarik (Drag) atau Klik item di bawah ke dalam kotak kategori yang tepat.</p>
-        </div>
-      </div>
-
-      <div className="mb-8">
-        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Item Data:</h3>
-        <div className="flex flex-wrap gap-3">
-          {items.map(item => (
-            <div 
-              key={item.id}
-              draggable
-              onDragStart={(e) => handleDragStart(e, item)}
-              onClick={() => handleItemClick(item)}
-              className={`flex items-center gap-2 px-4 py-2 bg-white border-2 rounded-xl shadow-sm cursor-pointer transition-all hover:shadow-md
-                ${selectedItem?.id === item.id ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200' : 'border-slate-200 hover:border-indigo-300'}
-              `}
-            >
-              {item.icon}
-              <span className="font-medium text-sm text-slate-700">{item.text}</span>
+            
+            <!-- Elemen Header (Tersembunyi di Intro) -->
+            <div id="header-stats" class="hidden flex items-center gap-3 md:gap-4">
+                <button onclick="toggleAudio()" id="btn-audio" class="p-2 bg-indigo-500/50 rounded-full hover:bg-indigo-500 transition-colors" title="Nyalakan/Matikan Musik">
+                    <i class="fa-solid fa-volume-xmark w-5 text-center"></i>
+                </button>
+                <div class="hidden sm:block font-medium">Siswa: <span id="display-name"></span></div>
+                <div class="bg-indigo-800 px-3 py-1.5 md:px-4 rounded-full flex items-center gap-2 font-bold border border-indigo-400">
+                    <i class="fa-solid fa-star text-yellow-400"></i>
+                    <span id="display-score">0</span> Poin
+                </div>
             </div>
-          ))}
-          {items.length === 0 && (
-            <div className="text-green-600 font-bold flex items-center gap-2">
-              <CheckCircle className="w-5 h-5" /> Semua item berhasil dikelompokkan!
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="max-w-4xl mx-auto p-4 py-8">
+        
+        <!-- INTRO SCREEN -->
+        <div id="screen-intro" class="bg-white p-8 rounded-2xl shadow-xl max-w-md mx-auto mt-10 text-center border-t-4 border-indigo-600 fade-in">
+            <div class="flex justify-center mb-6">
+                <div class="bg-indigo-100 p-4 rounded-full">
+                    <i class="fa-solid fa-book-open text-4xl text-indigo-600"></i>
+                </div>
             </div>
-          )}
-        </div>
-      </div>
-
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Zone Terstruktur */}
-        <div 
-          onDrop={(e) => handleDrop(e, 'terstruktur')}
-          onDragOver={handleDragOver}
-          onClick={() => handleZoneClick('terstruktur')}
-          className={`border-2 border-dashed rounded-xl p-4 min-h-[200px] transition-colors
-            ${selectedItem ? 'border-blue-400 bg-blue-50 cursor-pointer' : 'border-slate-300 bg-slate-50'}`}
-        >
-          <div className="font-bold text-blue-800 mb-4 border-b-2 border-blue-200 pb-2 text-center">
-            Data Terstruktur (Tabel/Format Jelas)
-          </div>
-          <div className="space-y-2">
-            {terstruktur.map(item => (
-              <div key={item.id} className="bg-white border border-blue-100 p-2 rounded-lg flex items-center gap-2 text-sm shadow-sm text-blue-900">
-                 <CheckCircle className="w-4 h-4 text-green-500" /> {item.text}
-              </div>
-            ))}
-          </div>
+            <h1 class="text-2xl font-extrabold text-slate-800 mb-2">Selamat Datang di DataScience Quest!</h1>
+            <p class="text-slate-600 mb-8 text-sm">
+                Pelajari dasar-dasar ilmu data kelas 10 lewat 3 misi seru. Kumpulkan poin tertinggi dan dapatkan sertifikatmu!
+            </p>
+            <form id="intro-form" class="space-y-4">
+                <div>
+                    <label class="block text-left text-sm font-semibold text-slate-700 mb-1">Nama Siswa</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-user absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="input-name" class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all" placeholder="Masukkan namamu..." required />
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors">
+                    <i class="fa-solid fa-play"></i> Mulai Petualangan
+                </button>
+            </form>
         </div>
 
-        {/* Zone Tidak Terstruktur */}
-        <div 
-          onDrop={(e) => handleDrop(e, 'tidak_terstruktur')}
-          onDragOver={handleDragOver}
-          onClick={() => handleZoneClick('tidak_terstruktur')}
-          className={`border-2 border-dashed rounded-xl p-4 min-h-[200px] transition-colors
-            ${selectedItem ? 'border-purple-400 bg-purple-50 cursor-pointer' : 'border-slate-300 bg-slate-50'}`}
-        >
-          <div className="font-bold text-purple-800 mb-4 border-b-2 border-purple-200 pb-2 text-center">
-            Data Tidak Terstruktur (Media/Teks Bebas)
-          </div>
-          <div className="space-y-2">
-            {tidakTerstruktur.map(item => (
-              <div key={item.id} className="bg-white border border-purple-100 p-2 rounded-lg flex items-center gap-2 text-sm shadow-sm text-purple-900">
-                 <CheckCircle className="w-4 h-4 text-green-500" /> {item.text}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+        <!-- LEVEL 1: DRAG AND DROP -->
+        <div id="screen-level1" class="hidden bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-slate-100 fade-in">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="bg-blue-100 p-2 rounded-lg"><i class="fa-solid fa-bullseye text-xl text-blue-600"></i></div>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">Level 1: Kelompokkan Data</h2>
+                    <p class="text-sm text-slate-500">Tarik (Drag) atau Klik item di bawah ke dalam kotak kategori yang tepat.</p>
+                </div>
+            </div>
 
-      {isComplete && (
-        <div className="mt-8 flex justify-end animate-bounce">
-          <button 
-            onClick={() => onComplete(pointsEarned)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2"
-          >
-            Lanjut ke Level 2 <ArrowRight className="w-5 h-5" />
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
+            <div class="mb-8">
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Item Data:</h3>
+                <div id="level1-items-container" class="flex flex-wrap gap-3 min-h-[50px]">
+                    <!-- Items akan di-render via JS -->
+                </div>
+            </div>
 
-// --- LEVEL 2: MATCHING WORD ---
-function Level2({ onComplete }) {
-  // Shuffle logic for left and right columns
-  const [terms, setTerms] = useState([]);
-  const [defs, setDefs] = useState([]);
-  const [selectedTerm, setSelectedTerm] = useState(null);
-  const [selectedDef, setSelectedDef] = useState(null);
-  const [matchedIds, setMatchedIds] = useState([]);
-  const [pointsEarned, setPointsEarned] = useState(0);
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Zone Terstruktur -->
+                <div id="zone-terstruktur" ondrop="drop(event, 'terstruktur')" ondragover="allowDrop(event)" onclick="clickZone('terstruktur')" class="border-2 border-dashed border-slate-300 bg-slate-50 rounded-xl p-4 min-h-[200px] transition-colors cursor-pointer">
+                    <div class="font-bold text-blue-800 mb-4 border-b-2 border-blue-200 pb-2 text-center">
+                        Data Terstruktur (Tabel/Format Jelas)
+                    </div>
+                    <div id="list-terstruktur" class="space-y-2 pointer-events-none"></div>
+                </div>
 
-  useEffect(() => {
-    // Shuffle arrays independently on mount
-    const shuffledTerms = [...LEVEL_2_PAIRS].sort(() => Math.random() - 0.5);
-    const shuffledDefs = [...LEVEL_2_PAIRS].sort(() => Math.random() - 0.5);
-    setTerms(shuffledTerms);
-    setDefs(shuffledDefs);
-  }, []);
+                <!-- Zone Tidak Terstruktur -->
+                <div id="zone-tidak_terstruktur" ondrop="drop(event, 'tidak_terstruktur')" ondragover="allowDrop(event)" onclick="clickZone('tidak_terstruktur')" class="border-2 border-dashed border-slate-300 bg-slate-50 rounded-xl p-4 min-h-[200px] transition-colors cursor-pointer">
+                    <div class="font-bold text-purple-800 mb-4 border-b-2 border-purple-200 pb-2 text-center">
+                        Data Tidak Terstruktur (Media/Teks Bebas)
+                    </div>
+                    <div id="list-tidak_terstruktur" class="space-y-2 pointer-events-none"></div>
+                </div>
+            </div>
 
-  useEffect(() => {
-    if (selectedTerm && selectedDef) {
-      if (selectedTerm === selectedDef) {
-        // Match!
-        setMatchedIds(prev => [...prev, selectedTerm]);
-        setPointsEarned(prev => prev + 10); // 10 points per match
-        setSelectedTerm(null);
-        setSelectedDef(null);
-      } else {
-        // No match, clear after slight delay
-        setTimeout(() => {
-          setSelectedTerm(null);
-          setSelectedDef(null);
-        }, 600);
-      }
-    }
-  }, [selectedTerm, selectedDef]);
-
-  const isComplete = matchedIds.length === LEVEL_2_PAIRS.length;
-
-  return (
-    <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-slate-100">
-       <div className="flex items-center gap-3 mb-8">
-        <div className="bg-green-100 p-2 rounded-lg"><target className="w-6 h-6 text-green-600" /></div>
-        <div>
-          <h2 className="text-xl font-bold text-slate-800">Level 2: Jodohkan Istilah</h2>
-          <p className="text-sm text-slate-500">Pilih istilah di kiri lalu pilih arti yang sesuai di kanan.</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 md:gap-8 relative">
-        {/* Left Column: Terms */}
-        <div className="space-y-4">
-          <h3 className="text-center font-bold text-slate-600 mb-4">Istilah</h3>
-          {terms.map(item => {
-            const isMatched = matchedIds.includes(item.id);
-            const isSelected = selectedTerm === item.id;
-            let btnClass = "border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50 text-slate-700";
-            if (isSelected) btnClass = "border-indigo-500 bg-indigo-100 text-indigo-800 ring-2 ring-indigo-200";
-            if (isMatched) btnClass = "border-green-500 bg-green-50 text-green-700 opacity-60 cursor-not-allowed";
-
-            return (
-              <button
-                key={`term-${item.id}`}
-                disabled={isMatched}
-                onClick={() => setSelectedTerm(item.id)}
-                className={`w-full p-4 rounded-xl border-2 font-bold text-sm md:text-base text-left transition-all ${btnClass}`}
-              >
-                {item.term}
-              </button>
-            )
-          })}
+            <div id="level1-next" class="hidden mt-8 flex justify-end bounce-in">
+                <button onclick="finishLevel1()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2">
+                    Lanjut ke Level 2 <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
         </div>
 
-        {/* Right Column: Definitions */}
-        <div className="space-y-4">
-          <h3 className="text-center font-bold text-slate-600 mb-4">Pengertian</h3>
-          {defs.map(item => {
-            const isMatched = matchedIds.includes(item.id);
-            const isSelected = selectedDef === item.id;
-            let btnClass = "border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50 text-slate-600";
-            if (isSelected) btnClass = "border-indigo-500 bg-indigo-100 text-indigo-800 ring-2 ring-indigo-200";
-            if (isMatched) btnClass = "border-green-500 bg-green-50 text-green-700 opacity-60 cursor-not-allowed";
-            if (selectedTerm && selectedDef === item.id && selectedTerm !== item.id) {
-               btnClass = "border-red-500 bg-red-50 text-red-700 ring-2 ring-red-200"; // Error state momentarily
+        <!-- LEVEL 2: MATCHING WORD -->
+        <div id="screen-level2" class="hidden bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-slate-100 fade-in">
+            <div class="flex items-center gap-3 mb-8">
+                <div class="bg-green-100 p-2 rounded-lg"><i class="fa-solid fa-bullseye text-xl text-green-600"></i></div>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">Level 2: Jodohkan Istilah</h2>
+                    <p class="text-sm text-slate-500">Pilih istilah di kiri lalu pilih arti yang sesuai di kanan.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 md:gap-8 relative">
+                <div class="space-y-4">
+                    <h3 class="text-center font-bold text-slate-600 mb-4">Istilah</h3>
+                    <div id="level2-terms" class="space-y-4"></div>
+                </div>
+                <div class="space-y-4">
+                    <h3 class="text-center font-bold text-slate-600 mb-4">Pengertian</h3>
+                    <div id="level2-defs" class="space-y-4"></div>
+                </div>
+            </div>
+
+            <div id="level2-next" class="hidden mt-10 flex justify-end bounce-in">
+                <button onclick="finishLevel2()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2">
+                    Lanjut ke Level Terakhir <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- LEVEL 3: MULTIPLE CHOICE -->
+        <div id="screen-level3" class="hidden bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-slate-100 max-w-2xl mx-auto fade-in">
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="bg-purple-100 p-2 rounded-lg"><i class="fa-solid fa-book-open text-xl text-purple-600"></i></div>
+                    <h2 class="text-xl font-bold text-slate-800">Level 3: Kuis Akhir</h2>
+                </div>
+                <div id="level3-progress" class="text-sm font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+                    1 dari 3
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <h3 id="level3-question" class="text-lg md:text-xl font-semibold text-slate-800 leading-relaxed">
+                    Pertanyaan?
+                </h3>
+            </div>
+
+            <div id="level3-options" class="space-y-3 mb-8">
+                <!-- Options via JS -->
+            </div>
+
+            <div id="level3-next" class="hidden flex justify-end bounce-in">
+                <button onclick="nextQuestion()" id="btn-next-question" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2">
+                    Selanjutnya <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- CERTIFICATE SCREEN -->
+        <div id="screen-certificate" class="hidden max-w-3xl mx-auto space-y-8 fade-in">
+            <div id="certificate-content" class="relative p-10 md:p-16 bg-white border-[12px] border-double border-indigo-200 rounded-lg shadow-2xl overflow-hidden print:shadow-none print:border-none">
+                <!-- Background Decorations -->
+                <div class="absolute top-0 left-0 w-32 h-32 bg-indigo-100 rounded-br-full opacity-50"></div>
+                <div class="absolute bottom-0 right-0 w-48 h-48 bg-yellow-100 rounded-tl-full opacity-50"></div>
+                
+                <div class="relative z-10 text-center">
+                    <div class="flex justify-center mb-6">
+                        <i id="cert-trophy" class="fa-solid fa-trophy text-6xl md:text-7xl"></i>
+                    </div>
+                    
+                    <h1 class="text-3xl md:text-5xl font-extrabold text-indigo-900 mb-2 uppercase tracking-wider">
+                        Sertifikat Kelulusan
+                    </h1>
+                    <p class="text-indigo-600 font-semibold tracking-widest uppercase text-xs md:text-sm mb-8">
+                        Data Science Quest - Level Pemula
+                    </p>
+
+                    <p class="text-slate-600 italic mb-2">Diberikan dengan bangga kepada:</p>
+                    <h2 id="cert-name" class="text-3xl md:text-4xl font-bold text-slate-800 border-b-2 border-slate-300 inline-block px-8 pb-2 mb-6">
+                        Nama Siswa
+                    </h2>
+
+                    <p class="text-slate-600 max-w-lg mx-auto text-sm md:text-base mb-8">
+                        Telah berhasil menyelesaikan misi edukasi dasar-dasar Data Science (Kelas 10) dengan pencapaian yang sangat baik dan meraih skor:
+                    </p>
+
+                    <div class="flex justify-center items-center gap-4 mb-10">
+                        <div class="bg-indigo-600 text-white px-8 py-3 rounded-full text-3xl font-black shadow-lg">
+                            <span id="cert-score">0</span> / 100
+                        </div>
+                        <div id="cert-perfect" class="hidden bg-yellow-400 text-yellow-900 px-4 py-3 rounded-full text-sm font-bold flex items-center gap-1 shadow-lg">
+                            <i class="fa-solid fa-star"></i> Nilai Sempurna!
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-end border-t border-slate-200 pt-6 mt-6">
+                        <div class="text-left">
+                            <p class="text-xs md:text-sm text-slate-500 mb-1">Tanggal Penyelesaian:</p>
+                            <p id="cert-date" class="font-bold text-slate-700 text-sm md:text-base"></p>
+                        </div>
+                        <div class="text-right flex flex-col items-center">
+                            <i class="fa-solid fa-brain text-4xl text-indigo-300 mb-2"></i>
+                            <p class="font-bold text-slate-700 text-sm md:text-base">Instruktur AI</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="print-hide flex flex-col sm:flex-row justify-center gap-4">
+                <button onclick="window.print()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-md">
+                    <i class="fa-solid fa-download"></i> Simpan / Cetak Sertifikat
+                </button>
+                <button onclick="restartGame()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-md">
+                    <i class="fa-solid fa-rotate-right"></i> Main Ulang
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Audio Player -->
+    <audio id="bg-audio" loop src="https://mrslamcode.github.io/musikbacksound/Proof_In_The_Pattern.mp3"></audio>
+
+    <!-- GAME LOGIC SCRIPT -->
+    <script>
+        // --- DATA ---
+        const LEVEL_1_ITEMS_DATA = [
+            { id: 1, text: "Tabel Nilai Siswa", type: "terstruktur", icon: "fa-file-excel" },
+            { id: 2, text: "Foto Pemandangan", type: "tidak_terstruktur", icon: "fa-image" },
+            { id: 3, text: "Database Sekolah", type: "terstruktur", icon: "fa-database" },
+            { id: 4, text: "Video TikTok", type: "tidak_terstruktur", icon: "fa-video" },
+            { id: 5, text: "File Excel Harga", type: "terstruktur", icon: "fa-file-excel" },
+            { id: 6, text: "Rekaman Suara", type: "tidak_terstruktur", icon: "fa-file-audio" }
+        ];
+
+        const LEVEL_2_PAIRS_DATA = [
+            { id: 1, term: "Dataset", def: "Kumpulan data mentah yang siap untuk diolah dan dianalisis." },
+            { id: 2, term: "Data Cleansing", def: "Proses membersihkan data dari nilai kosong (null), duplikat, atau error." },
+            { id: 3, term: "Visualisasi Data", def: "Menyajikan data dalam bentuk grafik atau diagram agar mudah dipahami." },
+            { id: 4, term: "Algoritma", def: "Urutan langkah-langkah logis untuk menyelesaikan sebuah masalah." }
+        ];
+
+        const LEVEL_3_QUESTIONS = [
+            {
+                question: "Apa tujuan utama dari Data Science?",
+                options: [
+                    "Membuat desain website yang menarik",
+                    "Mengekstrak informasi dan pengetahuan yang berguna dari data",
+                    "Memperbaiki komputer yang rusak",
+                    "Menulis artikel untuk koran"
+                ],
+                answer: 1
+            },
+            {
+                question: "Langkah pertama yang harus dilakukan dalam tahapan Data Science adalah...",
+                options: [
+                    "Visualisasi Data",
+                    "Pemodelan (Machine Learning)",
+                    "Pengumpulan Data (Data Collection)",
+                    "Pembersihan Data (Data Cleansing)"
+                ],
+                answer: 2
+            },
+            {
+                question: "Seseorang yang memiliki keahlian dalam mengumpulkan, mengolah, dan menganalisis data untuk pengambilan keputusan disebut...",
+                options: [
+                    "Web Developer",
+                    "Data Scientist",
+                    "UI/UX Designer",
+                    "System Analyst"
+                ],
+                answer: 1
+            }
+        ];
+
+        // --- GLOBAL STATE ---
+        let gameState = {
+            playerName: '',
+            score: 0,
+            isPlayingAudio: false
+        };
+
+        let level1State = {
+            items: [],
+            terstruktur: [],
+            tidakTerstruktur: [],
+            selectedId: null,
+            points: 0
+        };
+
+        let level2State = {
+            terms: [],
+            defs: [],
+            matchedIds: [],
+            selectedTerm: null,
+            selectedDef: null,
+            points: 0
+        };
+
+        let level3State = {
+            currentQ: 0,
+            isAnswered: false,
+            selectedOption: null,
+            points: 0
+        };
+
+        // --- DOM ELEMENTS ---
+        const audioElement = document.getElementById('bg-audio');
+        const btnAudio = document.getElementById('btn-audio');
+        const displayScore = document.getElementById('display-score');
+        const displayName = document.getElementById('display-name');
+        const headerStats = document.getElementById('header-stats');
+
+        // --- AUDIO CONTROLS ---
+        function toggleAudio() {
+            if (gameState.isPlayingAudio) {
+                audioElement.pause();
+                gameState.isPlayingAudio = false;
+                btnAudio.innerHTML = '<i class="fa-solid fa-volume-xmark w-5 text-center"></i>';
+            } else {
+                audioElement.play().then(() => {
+                    gameState.isPlayingAudio = true;
+                    btnAudio.innerHTML = '<i class="fa-solid fa-volume-high w-5 text-center"></i>';
+                }).catch(e => {
+                    console.warn("Gagal memutar audio:", e);
+                });
+            }
+        }
+
+        audioElement.addEventListener('error', () => {
+            console.warn("Audio latar tidak dapat dimuat.");
+        });
+
+        // --- UTILS ---
+        function updateHeaderScore() {
+            displayScore.innerText = gameState.score;
+        }
+
+        function showScreen(screenId) {
+            ['screen-intro', 'screen-level1', 'screen-level2', 'screen-level3', 'screen-certificate'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(screenId).classList.remove('hidden');
+
+            if (screenId === 'screen-intro') {
+                headerStats.classList.add('hidden');
+            } else {
+                headerStats.classList.remove('hidden');
+                headerStats.classList.add('flex');
+            }
+        }
+
+        function shuffle(array) {
+            return array.slice().sort(() => Math.random() - 0.5);
+        }
+
+        // --- INTRO ---
+        document.getElementById('intro-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('input-name').value.trim();
+            if (name) {
+                gameState.playerName = name;
+                displayName.innerText = name;
+                gameState.score = 0;
+                updateHeaderScore();
+                
+                // Attempt autoplay
+                audioElement.play().then(() => {
+                    gameState.isPlayingAudio = true;
+                    btnAudio.innerHTML = '<i class="fa-solid fa-volume-high w-5 text-center"></i>';
+                }).catch(err => {
+                    console.warn("Autoplay diblokir:", err);
+                });
+
+                initLevel1();
+            }
+        });
+
+        // --- LEVEL 1 ---
+        function initLevel1() {
+            level1State = {
+                items: [...LEVEL_1_ITEMS_DATA],
+                terstruktur: [],
+                tidakTerstruktur: [],
+                selectedId: null,
+                points: 0
+            };
+            renderLevel1();
+            showScreen('screen-level1');
+        }
+
+        function renderLevel1() {
+            const container = document.getElementById('level1-items-container');
+            container.innerHTML = '';
+
+            if (level1State.items.length === 0) {
+                container.innerHTML = `<div class="text-green-600 font-bold flex items-center gap-2"><i class="fa-solid fa-circle-check"></i> Semua item berhasil dikelompokkan!</div>`;
+                document.getElementById('level1-next').classList.remove('hidden');
+            } else {
+                level1State.items.forEach(item => {
+                    const isSelected = level1State.selectedId === item.id;
+                    const styleClass = isSelected ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-200' : 'border-slate-200 hover:border-indigo-300';
+                    
+                    container.innerHTML += `
+                        <div draggable="true" ondragstart="drag(event, ${item.id})" onclick="clickItem(${item.id})" 
+                             class="flex items-center gap-2 px-4 py-2 bg-white border-2 rounded-xl shadow-sm cursor-pointer transition-all hover:shadow-md ${styleClass}">
+                            <i class="fa-solid ${item.icon} text-slate-600"></i>
+                            <span class="font-medium text-sm text-slate-700">${item.text}</span>
+                        </div>
+                    `;
+                });
+                document.getElementById('level1-next').classList.add('hidden');
             }
 
-            return (
-              <button
-                key={`def-${item.id}`}
-                disabled={isMatched}
-                onClick={() => setSelectedDef(item.id)}
-                className={`w-full p-4 rounded-xl border-2 text-sm leading-snug text-left transition-all ${btnClass}`}
-              >
-                {item.def}
-              </button>
-            )
-          })}
-        </div>
-      </div>
+            // Render Zones
+            const renderZoneItems = (items, elementId) => {
+                const el = document.getElementById(elementId);
+                el.innerHTML = items.map(item => `
+                    <div class="bg-white border border-slate-200 p-2 rounded-lg flex items-center gap-2 text-sm shadow-sm text-slate-800">
+                        <i class="fa-solid fa-circle-check text-green-500"></i> ${item.text}
+                    </div>
+                `).join('');
+            };
 
-      {isComplete && (
-        <div className="mt-10 flex justify-end animate-bounce">
-          <button 
-            onClick={() => onComplete(pointsEarned)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2"
-          >
-            Lanjut ke Level Terakhir <ArrowRight className="w-5 h-5" />
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
+            renderZoneItems(level1State.terstruktur, 'list-terstruktur');
+            renderZoneItems(level1State.tidakTerstruktur, 'list-tidak_terstruktur');
 
-// --- LEVEL 3: MULTIPLE CHOICE ---
-function Level3({ onComplete }) {
-  const [currentQ, setCurrentQ] = useState(0);
-  const [pointsEarned, setPointsEarned] = useState(0);
-  const [selectedOption, setSelectedOption] = useState(null);
-  const [isAnswered, setIsAnswered] = useState(false);
+            // Zone highlighting if something is clicked
+            const zoneTer = document.getElementById('zone-terstruktur');
+            const zoneTdk = document.getElementById('zone-tidak_terstruktur');
+            
+            if (level1State.selectedId) {
+                zoneTer.classList.replace('border-slate-300', 'border-blue-400');
+                zoneTer.classList.replace('bg-slate-50', 'bg-blue-50');
+                zoneTdk.classList.replace('border-slate-300', 'border-purple-400');
+                zoneTdk.classList.replace('bg-slate-50', 'bg-purple-50');
+            } else {
+                zoneTer.classList.replace('border-blue-400', 'border-slate-300');
+                zoneTer.classList.replace('bg-blue-50', 'bg-slate-50');
+                zoneTdk.classList.replace('border-purple-400', 'border-slate-300');
+                zoneTdk.classList.replace('bg-purple-50', 'bg-slate-50');
+            }
+        }
 
-  const question = LEVEL_3_QUESTIONS[currentQ];
+        // Drag events
+        window.allowDrop = function(ev) { ev.preventDefault(); }
+        window.drag = function(ev, id) { ev.dataTransfer.setData("itemId", id); }
+        window.drop = function(ev, zoneType) {
+            ev.preventDefault();
+            const itemId = parseInt(ev.dataTransfer.getData("itemId"));
+            processMoveL1(itemId, zoneType);
+        }
 
-  const handleAnswer = (index) => {
-    if (isAnswered) return;
-    setSelectedOption(index);
-    setIsAnswered(true);
-    
-    if (index === question.answer) {
-      setPointsEarned(prev => prev + 10); // 10 points per correct answer
-    }
-  };
+        // Click events
+        window.clickItem = function(id) {
+            level1State.selectedId = level1State.selectedId === id ? null : id;
+            renderLevel1();
+        }
+        window.clickZone = function(zoneType) {
+            if (level1State.selectedId) {
+                processMoveL1(level1State.selectedId, zoneType);
+                level1State.selectedId = null;
+                renderLevel1();
+            }
+        }
 
-  const nextQuestion = () => {
-    if (currentQ < LEVEL_3_QUESTIONS.length - 1) {
-      setCurrentQ(prev => prev + 1);
-      setSelectedOption(null);
-      setIsAnswered(false);
-    } else {
-      onComplete(pointsEarned);
-    }
-  };
+        function processMoveL1(itemId, zoneType) {
+            const itemIndex = level1State.items.findIndex(i => i.id === itemId);
+            if (itemIndex > -1) {
+                const item = level1State.items[itemIndex];
+                if (item.type === zoneType) {
+                    level1State.items.splice(itemIndex, 1);
+                    if (zoneType === 'terstruktur') level1State.terstruktur.push(item);
+                    else level1State.tidakTerstruktur.push(item);
+                    level1State.points += 5;
+                    renderLevel1();
+                } else {
+                    alert(`Oops! "${item.text}" bukan merupakan tipe data ${zoneType === 'terstruktur' ? 'Terstruktur' : 'Tidak Terstruktur'}. Coba lagi!`);
+                }
+            }
+        }
 
-  return (
-    <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-slate-100 max-w-2xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-3">
-          <div className="bg-purple-100 p-2 rounded-lg"><BookOpen className="w-6 h-6 text-purple-600" /></div>
-          <h2 className="text-xl font-bold text-slate-800">Level 3: Kuis Akhir</h2>
-        </div>
-        <div className="text-sm font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
-          Pertanyaan {currentQ + 1} dari {LEVEL_3_QUESTIONS.length}
-        </div>
-      </div>
+        window.finishLevel1 = function() {
+            gameState.score += level1State.points;
+            updateHeaderScore();
+            initLevel2();
+        }
 
-      <div className="mb-8">
-        <h3 className="text-lg md:text-xl font-semibold text-slate-800 leading-relaxed">
-          {question.question}
-        </h3>
-      </div>
+        // --- LEVEL 2 ---
+        function initLevel2() {
+            level2State = {
+                terms: shuffle([...LEVEL_2_PAIRS_DATA]),
+                defs: shuffle([...LEVEL_2_PAIRS_DATA]),
+                matchedIds: [],
+                selectedTerm: null,
+                selectedDef: null,
+                points: 0
+            };
+            renderLevel2();
+            showScreen('screen-level2');
+        }
 
-      <div className="space-y-3 mb-8">
-        {question.options.map((opt, idx) => {
-          const isCorrect = idx === question.answer;
-          const isSelected = selectedOption === idx;
-          
-          let btnClass = "border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-slate-700";
-          
-          if (isAnswered) {
-            if (isCorrect) btnClass = "border-green-500 bg-green-100 text-green-800 font-bold";
-            else if (isSelected && !isCorrect) btnClass = "border-red-500 bg-red-100 text-red-800";
-            else btnClass = "border-slate-200 opacity-50";
-          }
+        function renderLevel2() {
+            const termsContainer = document.getElementById('level2-terms');
+            const defsContainer = document.getElementById('level2-defs');
+            
+            termsContainer.innerHTML = '';
+            defsContainer.innerHTML = '';
 
-          return (
-            <button
-              key={idx}
-              disabled={isAnswered}
-              onClick={() => handleAnswer(idx)}
-              className={`w-full p-4 text-left border-2 rounded-xl transition-all flex justify-between items-center ${btnClass}`}
-            >
-              <span>{String.fromCharCode(65 + idx)}. {opt}</span>
-              {isAnswered && isCorrect && <CheckCircle className="w-5 h-5 text-green-600" />}
-              {isAnswered && isSelected && !isCorrect && <XCircle className="w-5 h-5 text-red-600" />}
-            </button>
-          )
-        })}
-      </div>
+            // Render Terms
+            level2State.terms.forEach(item => {
+                const isMatched = level2State.matchedIds.includes(item.id);
+                const isSelected = level2State.selectedTerm === item.id;
+                
+                let btnClass = "border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50 text-slate-700 cursor-pointer";
+                if (isSelected) btnClass = "border-indigo-500 bg-indigo-100 text-indigo-800 ring-2 ring-indigo-200 cursor-pointer";
+                if (isMatched) btnClass = "border-green-500 bg-green-50 text-green-700 opacity-60 cursor-not-allowed";
 
-      {isAnswered && (
-        <div className="flex justify-end">
-          <button 
-            onClick={nextQuestion}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2"
-          >
-            {currentQ < LEVEL_3_QUESTIONS.length - 1 ? 'Pertanyaan Selanjutnya' : 'Selesaikan Misi!'} <ArrowRight className="w-5 h-5" />
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
+                termsContainer.innerHTML += `
+                    <button ${isMatched ? 'disabled' : ''} onclick="selectTerm(${item.id})" class="w-full p-4 rounded-xl border-2 font-bold text-sm md:text-base text-left transition-all ${btnClass}">
+                        ${item.term}
+                    </button>
+                `;
+            });
 
-// --- CERTIFICATE COMPONENT ---
-function Certificate({ name, score, onRestart }) {
-  const date = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
-  const isPerfect = score === 100;
+            // Render Defs
+            level2State.defs.forEach(item => {
+                const isMatched = level2State.matchedIds.includes(item.id);
+                const isSelected = level2State.selectedDef === item.id;
+                
+                let btnClass = "border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50 text-slate-600 cursor-pointer";
+                if (isSelected) btnClass = "border-indigo-500 bg-indigo-100 text-indigo-800 ring-2 ring-indigo-200 cursor-pointer";
+                if (isMatched) btnClass = "border-green-500 bg-green-50 text-green-700 opacity-60 cursor-not-allowed";
+                
+                // Show red border briefly if wrong match selected
+                if (level2State.selectedTerm && level2State.selectedDef === item.id && level2State.selectedTerm !== item.id) {
+                    btnClass = "border-red-500 bg-red-50 text-red-700 ring-2 ring-red-200";
+                }
 
-  return (
-    <div className="max-w-3xl mx-auto space-y-8">
-      {/* Certificate Box */}
-      <div id="certificate" className="relative p-10 md:p-16 bg-white border-[12px] border-double border-indigo-200 rounded-lg shadow-2xl overflow-hidden">
-        {/* Background Decorations */}
-        <div className="absolute top-0 left-0 w-32 h-32 bg-indigo-100 rounded-br-full opacity-50"></div>
-        <div className="absolute bottom-0 right-0 w-48 h-48 bg-yellow-100 rounded-tl-full opacity-50"></div>
-        
-        <div className="relative z-10 text-center">
-          <div className="flex justify-center mb-6">
-            <Trophy className={`w-20 h-20 ${isPerfect ? 'text-yellow-400' : 'text-slate-400'}`} />
-          </div>
-          
-          <h1 className="text-4xl md:text-5xl font-extrabold text-indigo-900 mb-2 uppercase tracking-wider">
-            Sertifikat Kelulusan
-          </h1>
-          <p className="text-indigo-600 font-semibold tracking-widest uppercase text-sm mb-10">
-            Data Science Quest - Level Pemula
-          </p>
+                defsContainer.innerHTML += `
+                    <button ${isMatched ? 'disabled' : ''} onclick="selectDef(${item.id})" class="w-full p-4 rounded-xl border-2 text-sm leading-snug text-left transition-all ${btnClass}">
+                        ${item.def}
+                    </button>
+                `;
+            });
 
-          <p className="text-slate-600 italic mb-4">Diberikan dengan bangga kepada:</p>
-          <h2 className="text-4xl font-bold text-slate-800 border-b-2 border-slate-300 inline-block px-8 pb-2 mb-8">
-            {name}
-          </h2>
+            if (level2State.matchedIds.length === LEVEL_2_PAIRS_DATA.length) {
+                document.getElementById('level2-next').classList.remove('hidden');
+            } else {
+                document.getElementById('level2-next').classList.add('hidden');
+            }
+        }
 
-          <p className="text-slate-600 max-w-lg mx-auto mb-10">
-            Telah berhasil menyelesaikan misi edukasi dasar-dasar Data Science (Kelas 10) dengan pencapaian yang sangat baik dan meraih skor:
-          </p>
+        window.selectTerm = function(id) {
+            level2State.selectedTerm = id;
+            checkL2Match();
+            renderLevel2();
+        }
 
-          <div className="flex justify-center items-center gap-4 mb-12">
-            <div className="bg-indigo-600 text-white px-8 py-3 rounded-full text-3xl font-black shadow-lg">
-              {score} / 100
-            </div>
-            {isPerfect && (
-              <div className="bg-yellow-400 text-yellow-900 px-4 py-3 rounded-full text-sm font-bold flex items-center gap-1 shadow-lg animate-pulse">
-                <Star className="w-5 h-5 fill-yellow-900" /> Nilai Sempurna!
-              </div>
-            )}
-          </div>
+        window.selectDef = function(id) {
+            level2State.selectedDef = id;
+            checkL2Match();
+            renderLevel2();
+        }
 
-          <div className="flex justify-between items-end border-t border-slate-200 pt-8 mt-8">
-            <div className="text-left">
-              <p className="text-sm text-slate-500 mb-1">Tanggal Penyelesaian:</p>
-              <p className="font-bold text-slate-700">{date}</p>
-            </div>
-            <div className="text-right flex flex-col items-center">
-              <Brain className="w-10 h-10 text-indigo-300 mb-2" />
-              <p className="font-bold text-slate-700">Instruktur AI</p>
-            </div>
-          </div>
-        </div>
-      </div>
+        function checkL2Match() {
+            if (level2State.selectedTerm && level2State.selectedDef) {
+                if (level2State.selectedTerm === level2State.selectedDef) {
+                    // Match
+                    level2State.matchedIds.push(level2State.selectedTerm);
+                    level2State.points += 10;
+                    level2State.selectedTerm = null;
+                    level2State.selectedDef = null;
+                } else {
+                    // No match - reset after slight delay visually handled by render state
+                    setTimeout(() => {
+                        level2State.selectedTerm = null;
+                        level2State.selectedDef = null;
+                        renderLevel2();
+                    }, 600);
+                }
+            }
+        }
 
-      {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row justify-center gap-4">
-        <button 
-          onClick={() => window.print()}
-          className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-md"
-        >
-          <Download className="w-5 h-5" /> Simpan / Cetak Sertifikat
-        </button>
-        <button 
-          onClick={onRestart}
-          className="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-md"
-        >
-          <RefreshCw className="w-5 h-5" /> Main Ulang
-        </button>
-      </div>
-    </div>
-  );
-}
+        window.finishLevel2 = function() {
+            gameState.score += level2State.points;
+            updateHeaderScore();
+            initLevel3();
+        }
+
+        // --- LEVEL 3 ---
+        function initLevel3() {
+            level3State = {
+                currentQ: 0,
+                isAnswered: false,
+                selectedOption: null,
+                points: 0
+            };
+            renderLevel3();
+            showScreen('screen-level3');
+        }
+
+        function renderLevel3() {
+            const qData = LEVEL_3_QUESTIONS[level3State.currentQ];
+            
+            document.getElementById('level3-progress').innerText = `${level3State.currentQ + 1} dari ${LEVEL_3_QUESTIONS.length}`;
+            document.getElementById('level3-question').innerText = qData.question;
+            
+            const optionsContainer = document.getElementById('level3-options');
+            optionsContainer.innerHTML = '';
+
+            qData.options.forEach((opt, idx) => {
+                const isCorrect = idx === qData.answer;
+                const isSelected = level3State.selectedOption === idx;
+                
+                let btnClass = "border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-slate-700 cursor-pointer";
+                let iconHtml = '';
+
+                if (level3State.isAnswered) {
+                    if (isCorrect) {
+                        btnClass = "border-green-500 bg-green-100 text-green-800 font-bold cursor-default";
+                        iconHtml = '<i class="fa-solid fa-circle-check text-green-600 text-xl"></i>';
+                    } else if (isSelected && !isCorrect) {
+                        btnClass = "border-red-500 bg-red-100 text-red-800 cursor-default";
+                        iconHtml = '<i class="fa-solid fa-circle-xmark text-red-600 text-xl"></i>';
+                    } else {
+                        btnClass = "border-slate-200 opacity-50 cursor-default";
+                    }
+                }
+
+                optionsContainer.innerHTML += `
+                    <button ${level3State.isAnswered ? 'disabled' : ''} onclick="answerQuiz(${idx})" 
+                            class="w-full p-4 text-left border-2 rounded-xl transition-all flex justify-between items-center ${btnClass}">
+                        <span>${String.fromCharCode(65 + idx)}. ${opt}</span>
+                        ${iconHtml}
+                    </button>
+                `;
+            });
+
+            const nextBtnContainer = document.getElementById('level3-next');
+            const nextBtn = document.getElementById('btn-next-question');
+            
+            if (level3State.isAnswered) {
+                nextBtnContainer.classList.remove('hidden');
+                if (level3State.currentQ < LEVEL_3_QUESTIONS.length - 1) {
+                    nextBtn.innerHTML = 'Pertanyaan Selanjutnya <i class="fa-solid fa-arrow-right"></i>';
+                } else {
+                    nextBtn.innerHTML = 'Selesaikan Misi! <i class="fa-solid fa-arrow-right"></i>';
+                }
+            } else {
+                nextBtnContainer.classList.add('hidden');
+            }
+        }
+
+        window.answerQuiz = function(idx) {
+            if (level3State.isAnswered) return;
+            
+            level3State.selectedOption = idx;
+            level3State.isAnswered = true;
+            
+            if (idx === LEVEL_3_QUESTIONS[level3State.currentQ].answer) {
+                level3State.points += 10;
+            }
+            
+            renderLevel3();
+        }
+
+        window.nextQuestion = function() {
+            if (level3State.currentQ < LEVEL_3_QUESTIONS.length - 1) {
+                level3State.currentQ++;
+                level3State.isAnswered = false;
+                level3State.selectedOption = null;
+                renderLevel3();
+            } else {
+                gameState.score += level3State.points;
+                updateHeaderScore();
+                showCertificate();
+            }
+        }
+
+        // --- CERTIFICATE ---
+        function showCertificate() {
+            document.getElementById('cert-name').innerText = gameState.playerName;
+            document.getElementById('cert-score').innerText = gameState.score;
+            
+            const dateStr = new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('cert-date').innerText = dateStr;
+
+            const isPerfect = gameState.score === 100;
+            const trophyIcon = document.getElementById('cert-trophy');
+            const perfectBadge = document.getElementById('cert-perfect');
+            
+            if (isPerfect) {
+                trophyIcon.classList.remove('text-slate-400');
+                trophyIcon.classList.add('text-yellow-400');
+                perfectBadge.classList.remove('hidden');
+            } else {
+                trophyIcon.classList.add('text-slate-400');
+                trophyIcon.classList.remove('text-yellow-400');
+                perfectBadge.classList.add('hidden');
+            }
+
+            showScreen('screen-certificate');
+        }
+
+        window.restartGame = function() {
+            document.getElementById('input-name').value = '';
+            gameState = {
+                playerName: '',
+                score: 0,
+                isPlayingAudio: gameState.isPlayingAudio
+            };
+            
+            if (gameState.isPlayingAudio) {
+                audioElement.pause();
+                audioElement.currentTime = 0;
+                gameState.isPlayingAudio = false;
+                btnAudio.innerHTML = '<i class="fa-solid fa-volume-xmark w-5 text-center"></i>';
+            }
+            
+            showScreen('screen-intro');
+        }
+
+    </script>
+</body>
+</html>
